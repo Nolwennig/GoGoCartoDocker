@@ -1,0 +1,45 @@
+version: '2'
+services:
+    apache:
+        image: zephyrwebhq/docker-apache
+        depends_on: [ fpm ]
+        volumes:
+         - ../:/var/www/html
+         - ./apache/vhost.conf:/vhost.conf
+        ports:
+         - "80:80"
+        networks: [front]
+        env_file: .env
+        logging: { driver: "json-file", options: { max-size: "200k", max-file: "10" } }
+    fpm:
+        build: php/5_6/fpm
+        image: php56_fpm
+        networks: [ front, db ]
+        volumes:
+            - ../:/var/www/html
+        dns: [8.8.8.8]
+        dns_search: [ google.com ]
+        env_file: .env
+        logging: { driver: "json-file", options: { max-size: "200k", max-file: "10" } }
+    cli:
+        build: php/cli
+        volumes_from: [ fpm ]
+        networks: [ front, db ]
+        environment:
+            TERM: xterm-color
+        dns: [8.8.8.8]
+        dns_search: ["google.com"]
+        volumes:
+            - ./php/7_0/cli/data/.ssh:/root/.ssh
+        env_file: .env        
+    mongo:
+        image: mongo
+        networks: [front]
+        env_file: .env
+        logging: { driver: "json-file", options: { max-size: "200k", max-file: "10" } }
+networks:
+    front:
+        driver: bridge
+    db:
+        driver: bridge
+
